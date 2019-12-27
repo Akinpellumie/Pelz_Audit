@@ -20,6 +20,10 @@
          <v-spacer></v-spacer>
 
     <!-- navbar menu -->
+            <v-btn text color="white" router-link to="/" dark large>
+                <span>HOME</span>
+                <v-icon right>mdi-home</v-icon>
+            </v-btn>
             <v-btn text color="white" router-link to="/history" dark large>
                 <span>HISTORY</span>
                 <v-icon right>mdi-history</v-icon>

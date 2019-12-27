@@ -12,15 +12,18 @@
 
         <v-card-text> 
         <v-form class="px-3" ref="form">
-            <v-text-field label="Device Type" v-model="device" prepend-icon="mdi-devices" required></v-text-field>
+            <!-- <h1 class="my-5 mb-5">Audit Title: {{ _device }}</h1>  -->
+            <h1 class="my-3 mb-3">Audit Title: </h1>
+            <v-text-field Label="Audit Title:" filled rounded dense v-model="_device"></v-text-field>
+            <v-text-field label="Device Type (e.g laptop)" v-model="device" prepend-icon="mdi-devices" required></v-text-field>
             <v-text-field label="Ratings (W)" v-model="rating" prepend-icon="mdi-video-input-component" :rules="rules" required></v-text-field>
-            <v-text-field label="Quantity" v-model="quantity" prepend-icon="mdi-counter" :rules="rules" required></v-text-field>
-            <v-text-field label="Daily Operations" v-model="operation" prepend-icon="mdi-chart-timeline" :rules="rules" required></v-text-field>
+            <v-text-field label="Quantity (amount)" v-model="quantity" prepend-icon="mdi-counter" :rules="rules" required></v-text-field>
+            <v-text-field label="Daily Operations (Hrs)" v-model="operation" prepend-icon="mdi-chart-timeline" :rules="rules" required></v-text-field>
     
 
      <v-spacer></v-spacer>
 
-     <v-btn text v-on:click="submit" class="orange darken-4 white--text mx-0 mt-3" :loading="loading" @click="dialog = false">Add Device</v-btn>
+     <v-btn text v-on:click="submit" class="orange darken-4 white--text mx-0 mt-3">Add Device</v-btn>
      </v-form>
      </v-card-text>
 
@@ -28,7 +31,7 @@
 
      <v-card-actions>
      <div class="flex-grow-1"></div>
-     <v-btn color="primary" text @click="dialog = false">
+     <v-btn color="primary" text >
      <v-icon>mdi-close</v-icon>
      <span>Close</span>
      </v-btn>
@@ -40,30 +43,30 @@
      
    </v-layout>   
 
-<v-card text class="pa-3 " v-for="fight in fights" :key="fight.id"> 
-  <v-layout row wrap :class="`pa-3 fight ${fight.status}`">
-    <span>{{fight.id}}</span>
+<v-card text class="pa-3 " v-for="audit in audits" :key="audit.id"> 
+  <v-layout row wrap :class="`pa-3 fight ${audit.status}`">
+    <span>{{ audit.id }}</span>
      <v-flex xs6 sm3 md3>
        <div class="caption grey--text">Device Type</div>
-       <div>{{fight.device}}</div>
+       <div>{{ audit.devices[0].device }}</div>
      </v-flex>
      <v-flex xs6 sm4 md2>
        <div class="caption grey--text">Ratings (W)</div>
-       <div>{{ fight.rating }}</div>
+       <div>{{ audit.devices[0].rating }}</div>
      </v-flex>
      <v-flex xs6 sm4 md2>
        <div class="caption grey--text">Quantity</div>
-       <div>{{ fight.quantity}}</div>
+       <div>{{ audit.devices[0].quantity }}</div>
      </v-flex>
      <v-flex xs6 sm4 md2>
        <div class="caption grey--text">Daily Operations (Hr)</div>
-       <div>{{ fight.operation}}</div>
+       <div>{{ audit.devices[0].operation }}</div>
      </v-flex>
      <v-flex xs6 sm4 md2>
        <div class="caption grey--text">Daily Consumption (W*Hr)</div>
-      <div>{{ fight.consumption}}</div>
+      <div>{{ audit.devices[0].consumption }}</div>
      </v-flex>
-    <v-btn color="orange darken-4" text v-on:click="delDevice(fight.id)">
+    <v-btn color="orange darken-4" text v-on:click="delDevice(audit.id)">
      <v-icon>mdi-delete</v-icon>
      </v-btn>
   </v-layout>
@@ -94,11 +97,11 @@
 </template>
 
 <script>
-import db from '@/fb'
+import axios from 'axios'
 export default {
   name: 'app',
   data: () => ({
-    fights: [],
+    audits: [],
      rules: [
         value => !!value || 'Required.',
         value => {
@@ -107,47 +110,69 @@ export default {
         },
       ],
     dialog:false,
-    device: '',
-    rating:'',
-    quantity:'',
-    operation: '',
+    title:'',
+    devices: [
+      {
+      device:'',
+      rating:'',
+      quantity:'',
+      operation: '',
+      }
+    ],
+    
     consumption: '',
-    loading: false,
-    dialog: false,
+    // loading: false,
+    // dialog: false,
     dailyCons: 0,
     energyCost: 0, 
     dailyEC: 0,
-    id: 'fight'
+    id: 'audit'
   }),
+  computed:{
+        _device(){
+
+                return this.$store.state.device;
+            
+        }
+    },
   methods: {
     submit(e){
     e.preventDefault();
-    this.loading = true;
-      const newDevice = {
-    device: this.device,
-    rating:this.rating,
-    quantity:this.quantity,
-    operation:this.operation,
+    // this.loading = true;
+    const newDevice = { 
+        title: this._device,
+        devices: [
+          {
+            device: this.device,
+            rating: this.rating,
+            quantity: this.quantity,
+            operation: this.operation
+          }
+        ],
     consumption: this.consumption,
-    id:this.fights.length + 1
+    id:this.audits.length + 1
     }
+    this._device = "";
+    this.device = "";
+    this.rating = "";
+    this.quantity = "";
+    this.operation = "";
+
+    axios.put('http://localhost:4545/audits', newDevice)
+  
+    this.audits.push(newDevice);
     
-     db.collection('pelzEnergy').add(newDevice).then(() =>{
-                    this.loading = false;
-                    this.dialog = false;
-                    console.log(device)
-                    // this.$emit('fightAdded')
-                })
-    this.fights.push(newDevice);
     for (let j=0; j<5000; j++){
-        this.fights[j].consumption = this.fights[j].rating*this.fights[j].quantity*this.fights[j].operation;
+        this.audits[j].devices[0].consumption = this.audits[j].devices[0].rating*this.audits[j].devices[0].quantity*this.audits[j].devices[0].operation;
     }
-    this.test=''
-    // }
+    this.device = "";
+    this.rating = "";
+    this.quantity = "";
+    this.operation = "";
         
     },
     delDevice(id){
-       this.fights=this.fights.filter(fight => fight.id !==id);
+       this.audits=this.audits.filter(audit => audit.id !==id);
     },
     Calculate(){
        if (this.energyCost== "" || this.energyCost==0) { 
@@ -156,7 +181,7 @@ export default {
           this.energyCost=this.energyCost
         }
       for (let j=0; j<5000; j++){
-        this.dailyCons += this.fights[j].consumption / 1000;
+        this.dailyCons += this.audits[j].devices[0].consumption / 1000;
         this.dailyEC = this.dailyCons*this.energyCost;
         }
     },
